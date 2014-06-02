@@ -99,7 +99,7 @@ slides:
         - class_notes: Role dependencies allow you to automatically pull in other roles when using a role. Role dependencies are stored in the meta/main.yml file contained within the role directory. This file should contain a list of roles and parameters to insert before the specified role.
 
       - 
-        - h3: Example role dependency entry in the meta/main.yml file:
+        - h3: "Example role dependency entry in the meta/main.yml file:"
         - code: |
             ---
             dependencies:
