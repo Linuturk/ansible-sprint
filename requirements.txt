@@ -1,2 +1,3 @@
 turbolift
 PyYAML
+-e git@github.com:mpdehaan/revelator.git
