@@ -1,0 +1,151 @@
+heat_template_version: 2014-10-16
+
+description: |
+  A template that deploys Ansible onto a single Linux server.
+
+parameter_groups:
+
+- label: Server Settings
+  parameters:
+  - flavor
+  - image
+
+- label: rax-dev-params
+  # These are parameters that will not be displayed in the portal. The purpose
+  # of these parameters is for users who are developing or testing newer or
+  # different setups. If any of these parameters are changed, there is a good
+  # chance this stack will fail to properly deploy.
+  parameters:
+  - rax_dynamic_inventory
+  - server_name
+
+parameters:
+
+  flavor:
+    label: Server Size
+    description: |
+      The size is based on the amount of RAM for the provisioned server.
+    type: string
+    default: 1 GB General Purpose v1
+    constraints:
+      - allowed_values:
+        - 1 GB General Purpose v1
+        - 2 GB General Purpose v1
+        - 4 GB General Purpose v1
+        - 8 GB General Purpose v1
+        - 15 GB I/O v1
+        - 30 GB I/O v1
+        - 1GB Standard Instance
+        - 2GB Standard Instance
+        - 4GB Standard Instance
+        - 8GB Standard Instance
+        - 15GB Standard Instance
+        - 30GB Standard Instance
+        description: must be a valid Nova Cloud Server flavor.
+
+  image:
+    label: Operating System
+    description: |
+      Server image used for all servers that are created as a part of this
+      deployment
+    type: string
+    default: Ubuntu 14.04 LTS (Trusty Tahr) (PVHVM)
+    constraints:
+    - allowed_values:
+      - Ubuntu 14.04 LTS (Trusty Tahr) (PVHVM)
+      description: Must be a supported operating system.
+
+  server_name:
+    label: Server Hostname
+    description: The instance name
+    type: string
+    default: ansible
+
+  rax_dynamic_inventory:
+    label: Rax Dynamic Inventory
+    description: Location of the Rax Dynamic Inventory
+    type: string
+    default: |
+      https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/rax.py
+
+resources:
+
+  wait_condition:
+    type: OS::Heat::SwiftSignal
+    properties:
+      handle: { get_resource: wait_condition_handle }
+      timeout: 1800
+
+  wait_condition_handle:
+    type: OS::Heat::SwiftSignalHandle
+
+  ssh_key:
+    type: "OS::Nova::KeyPair"
+    properties:
+      name: { get_param: "OS::stack_id" }
+      save_private_key: true
+
+  ansible_server:
+    type: "OS::Nova::Server"
+    properties:
+      key_name: { get_resource: ssh_key }
+      flavor: { get_param: flavor }
+      image: { get_param: image }
+      name: { get_param: server_name }
+      metadata:
+        rax-heat: { get_param: "OS::stack_id" }
+      config_drive: "true"
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #cloud-config
+            package_update: true
+            packages:
+              - python-dev
+              - python-yaml
+              - python-paramiko
+              - python-jinja2
+              - python-pip
+            write_files:
+            # Write out the example credentials file
+              - path: /root/.rackspace_cloud_credentials
+                permissions: '0644'
+                content: |
+                  [rackspace_cloud]
+                  username = my_username
+                  api_key = 01234567890abcdef
+            # Install Script
+              - path: /root/ansible_install.sh
+                permissions: '0544'
+                content: |
+                  #!/bin/bash -v
+                  set -e
+                  pip install ansible
+                  ansible --version
+                  mkdir -p /etc/ansible
+                  cd /etc/ansible
+                  # Pull the script
+                  wget -ct0 %rax_dynamic_inventory%
+                  chmod +x rax.py
+                  ufw allow 22
+                  wc_notify --data-binary '{"status": "SUCCESS"}'
+            runcmd:
+              - /root/ansible_install.sh
+          params:
+            "%rax_dynamic_inventory%": { get_param: ansible_tower_tarball }
+            "%server_name%": { get_param: server_name }
+            wc_notify: { get_attr: ['wait_condition_handle', 'curl_cli'] }
+
+outputs:
+  private_key:
+    description: SSH Private Key
+    value: { get_attr: [ssh_key, private_key] }
+
+  server_ip:
+    value: { get_attr: [ ansible_server, accessIPv4 ] }
+    description: Server IP
+
+  server_data:
+    value: { get_attr: [ wait_condition, data ] }
+    description: Data from wait condition to report script status
