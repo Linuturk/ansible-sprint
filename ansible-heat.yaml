@@ -121,7 +121,8 @@ resources:
                   The dynamic inventory script is located at `/etc/ansible/rax.py`, and is already set
                   to executable.
 
-                  To test this setup, attempt to gather facts with the following command. This assumes you have setup your SSH keys on your targets.
+                  To test this setup, attempt to gather facts with the following command.
+                  This assumes you have setup your SSH keys on your targets.
 
                   `ansible -i /etc/ansible/rax.py all -m setup`
             # Write out the example credentials file
