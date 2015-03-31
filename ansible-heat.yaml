@@ -121,7 +121,7 @@ resources:
                 content: |
                   #!/bin/bash -v
                   set -e
-                  pip install ansible
+                  pip install ansible pyrax
                   ansible --version
                   mkdir -p /etc/ansible
                   cd /etc/ansible
