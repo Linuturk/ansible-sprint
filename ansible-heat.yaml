@@ -133,7 +133,7 @@ resources:
             runcmd:
               - /root/ansible_install.sh
           params:
-            "%rax_dynamic_inventory%": { get_param: ansible_tower_tarball }
+            "%rax_dynamic_inventory%": { get_param: rax_dynamic_inventory }
             "%server_name%": { get_param: server_name }
             wc_notify: { get_attr: ['wait_condition_handle', 'curl_cli'] }
 
