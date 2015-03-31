@@ -107,10 +107,26 @@ resources:
               - python-paramiko
               - python-jinja2
               - python-pip
+              - vim
             write_files:
+              - path: /root/README.md
+                permissions: '0644'
+                content: |
+                  Ansible has already been installed and should be at the latest version.
+                  Pyrax and the Rackspace dynamic inventory script have been setup as well.
+
+                  To use this setup, you will need to update the cloud credentials at `/root/.rackspace_cloud_credentials`
+                  with your **username** and **api_key**.
+
+                  The dynamic inventory script is located at `/etc/ansible/rax.py`, and is already set
+                  to executable.
+
+                  To test this setup, attempt to gather facts with the following command. This assumes you have setup your SSH keys on your targets.
+
+                  `ansible -i /etc/ansible/rax.py all -m setup`
             # Write out the example credentials file
               - path: /root/.rackspace_cloud_credentials
-                permissions: '0644'
+                permissions: '0600'
                 content: |
                   [rackspace_cloud]
                   username = my_username
@@ -121,7 +137,7 @@ resources:
                 content: |
                   #!/bin/bash -v
                   set -e
-                  pip install ansible pyrax
+                  pip install ansible pyrax six --upgrade
                   ansible --version
                   mkdir -p /etc/ansible
                   cd /etc/ansible
